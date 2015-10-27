@@ -10,20 +10,19 @@ public class Starter {
             if ("--no-gui".equals(args[0]) && args.length > 1) {
                 String[] files = args[1].split(";");
                 String dest = "./archive.zip";
-                Integer level;
+                Integer level = Archive.DEFAULT_COMPRESS;
                 if (args.length > 2)
                     if ("-q".equals(args[2])) {
                         try {
                             level = Integer.parseInt(args[3]);
                         } catch (NumberFormatException e) {
-                            System.err.println("");
+                            System.err.println("Compression level must be number, default value set");
                         }
                         if (args.length > 4 && "-o".equals(args[4]))
                             dest = args[5];
                     } else if ("-o".equals(args[2]))
                         dest = args[3];
-
-                (new Archive(files, dest, false)).run();
+                (new Archive(files, dest, level, false)).run();
             } else {
                 printHelp();
             }
@@ -40,7 +39,7 @@ public class Starter {
         System.out.println("--help - print this help");
         System.out.println("--no-gui - active console mod");
         System.out.println("FILE... - list files separate by semicolon(;) e.g. ./myPhoto.jpg;./myMusic.ogg");
-        System.out.println("-q 123456789 - set compress level for archive, default value 5");
+        System.out.println("-q 123456789 - set compression level for archive, default value 5");
         System.out.println("-o DEST - choose destination file, default value './archive.zip'");
     }
 }
