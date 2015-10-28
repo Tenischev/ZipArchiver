@@ -9,7 +9,7 @@ public class Starter {
         if (args.length != 0) {
             if ("--no-gui".equals(args[0]) && args.length > 1) {
                 String[] files = args[1].split(";");
-                String dest = "./archive.zip";
+                String dest = Archive.DEFAULT_DEST;
                 Integer level = Archive.DEFAULT_COMPRESS;
                 if (args.length > 2)
                     if ("-q".equals(args[2])) {
@@ -27,7 +27,7 @@ public class Starter {
                 printHelp();
             }
         } else {
-            new GUI();
+            new MainGUI();
         }
     }
 
@@ -39,7 +39,7 @@ public class Starter {
         System.out.println("--help - print this help");
         System.out.println("--no-gui - active console mod");
         System.out.println("FILE... - list files separate by semicolon(;) e.g. ./myPhoto.jpg;./myMusic.ogg");
-        System.out.println("-q 123456789 - set compression level for archive, default value 5");
-        System.out.println("-o DEST - choose destination file, default value './archive.zip'");
+        System.out.println(String.format("-q 0123456789 - set compression level for archive, default value %d", Archive.DEFAULT_COMPRESS));
+        System.out.println(String.format("-o DEST - choose destination file, default value '%s'", Archive.DEFAULT_DEST));
     }
 }

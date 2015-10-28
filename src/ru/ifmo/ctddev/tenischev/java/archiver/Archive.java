@@ -9,10 +9,12 @@ import java.util.zip.ZipOutputStream;
  */
 public class Archive implements Runnable {
     public static final Integer DEFAULT_COMPRESS = 5;
+    public static final String DEFAULT_DEST = "./archive.zip";
     private final boolean guiMod;
     private final String[] nameFiles;
     private final String nameDest;
     private int compressLevel = DEFAULT_COMPRESS;
+    private ArchiveGUI gui;
 
     public Archive(String[] files, String dest, boolean gui) {
         nameFiles = files;
@@ -22,23 +24,26 @@ public class Archive implements Runnable {
 
     public Archive(String[] files, String dest, int level, boolean gui) {
         this(files, dest, gui);
+        if (0 > level || level > 9) {
+            System.err.println("Incorrect compression level, default value set");
+            level = DEFAULT_COMPRESS;
+        }
         compressLevel = level;
     }
 
     @Override
     public void run() {
+        if (guiMod)
+            gui = ArchiveGUI.create(Thread.currentThread());
         try (OutputStream outputStream = new FileOutputStream(nameDest)) {
             try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream)) {
-                if (!guiMod)
-                    System.out.println("Start archive files");
+                updateStatus("Start archive files");
                 zipOutputStream.setLevel(compressLevel);
-                if (!guiMod)
-                    System.out.println(String.format("Set compression level to %d", compressLevel));
+                updateStatus(String.format("Set compression level to %d", compressLevel));
                 for (String fileName : nameFiles) {
-                    if (!guiMod)
-                        System.out.println(String.format("Add file '%s' to zip", fileName));
+                    updateStatus(String.format("Add file '%s' to zip", fileName));
                     File file = new File(fileName);
-                    try (FileInputStream fileInputStream = new FileInputStream(file)){
+                    try (FileInputStream fileInputStream = new FileInputStream(file)) {
                         ZipEntry zipEntry = new ZipEntry(file.getName());
                         zipEntry.setMethod(ZipEntry.DEFLATED);
                         try {
@@ -46,32 +51,50 @@ public class Archive implements Runnable {
                             byte[] buf = new byte[1024];
                             int b;
                             try {
-                                while ((b = fileInputStream.read(buf)) != -1) {
+                                while ((b = fileInputStream.read(buf)) != -1 && !Thread.interrupted()) {
                                     try {
                                         zipOutputStream.write(buf, 0, b);
                                     } catch (IOException e) {
-                                        System.err.println("Error occurred when write into zip");
+                                        notifyStat("Error occurred when write into zip");
                                     }
                                 }
                             } catch (IOException e) {
-                                System.err.println("Error occurred when read of " + fileName);
+                                notifyStat("Error occurred when read of " + fileName);
                             }
                         } catch (IOException e) {
-                            System.err.println(String.format("Error occurred when add file '%s' to zip", fileName));
+                            notifyStat(String.format("Error occurred when add file '%s' to zip", fileName));
                         }
                     } catch (FileNotFoundException e) {
-                        System.err.println("Can't find file " + fileName);
+                        notifyStat("Can't find file " + fileName);
                     } catch (IOException e) {
-                        System.err.println("Can't close file " + fileName);
+                        notifyStat("Can't close file " + fileName);
                     }
+                    if (Thread.interrupted())
+                        break;
                 }
+                updateStatus("Archive complete!");
             }
         } catch (FileNotFoundException | RuntimeException e) {
-            System.err.println("Incorrect destination file, stop");
+            notifyStat("Incorrect destination file, stop");
         } catch (IOException e) {
-            System.err.println("Can't close destination file");
+            notifyStat("Can't close destination file");
         }
+    }
+
+    private void notifyStat(String str) {
         if (!guiMod)
-            System.out.println("Archive complete!");
+            System.err.println(str);
+        else {
+            gui.addMessage(str);
+        }
+    }
+
+    private void updateStatus(String str) {
+        if (!guiMod)
+            System.out.println(str);
+        else {
+            gui.verifyStatus(str);
+            gui.addMessage(str);
+        }
     }
 }
